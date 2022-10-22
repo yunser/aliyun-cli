@@ -7,6 +7,7 @@ import { table } from 'table'
 import * as moment from 'moment'
 import { getRdsRegionInstances } from './rds';
 import { getDomainList } from './domain';
+import { getBillingInfo } from './billing';
 // import * as commander from 'commander'
 const commander = require('commander')
 
@@ -84,6 +85,24 @@ function showDomainList(list) {
     console.log(table(objList2Table(viewList)))
 }
 
+function showBillingList(list) {
+
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - parseFloat(item.availableAmount.replace(/,/, ''))
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            return {
+                Name: item.name,
+                'Available Amount': parseFloat(item.availableAmount.replace(/,/, '')).toFixed(2),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
 const content = fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8')
 const pkg = JSON.parse(content)
 const verson = pkg.version
@@ -123,7 +142,8 @@ commander
                     "rds": {
                         "regions": ["cn-beijing"]
                     },
-                    "domain": {}
+                    "domain": {},
+                    "billing": {},
                 }
             ]
         }
@@ -147,12 +167,14 @@ commander
         const ecsResultPath = path.resolve(current_path, 'aliyun-ecs.json')
         const rdsResultPath = path.resolve(current_path, 'aliyun-rds.json')
         const domainResultPath = path.resolve(current_path, 'aliyun-domain.json')
+        const billingResultPath = path.resolve(current_path, 'aliyun-billing.json')
         let ecsResults = []
         let rdsResults = []
         let domainResults = []
+        let billingResults = []
 
         for (let accessKey of db.accessKeys) {
-            const { name, accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain } = accessKey
+            const { name, accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing } = accessKey
             const { regions: ecsRegions = [] } = ecs
             const { regions: rdsRegions = [] } = rds
 
@@ -174,11 +196,19 @@ commander
                 const { list } = await getDomainList(accessKeyId, accessKeySecret)
                 domainResults.push(...list)
             }
+            if (!!billing) {
+                const info = await getBillingInfo(accessKeyId, accessKeySecret)
+                billingResults.push({
+                    ...info,
+                    name: accessKey.name,
+                })
+            }
         }
 
         fs.writeFileSync(ecsResultPath, JSON.stringify(ecsResults, null, 4), 'utf-8')
         fs.writeFileSync(rdsResultPath, JSON.stringify(rdsResults, null, 4), 'utf-8')
         fs.writeFileSync(domainResultPath, JSON.stringify(domainResults, null, 4), 'utf-8')
+        fs.writeFileSync(billingResultPath, JSON.stringify(billingResults, null, 4), 'utf-8')
         if (ecsResults.length) {
             console.log('======== ECS ========')
             showEcsList(ecsResults)
@@ -191,10 +221,15 @@ commander
             console.log('======== Domain ========')
             showDomainList(domainResults)
         }
+        if (billingResults.length) {
+            console.log('======== Billing ========')
+            showBillingList(billingResults)
+        }
 
         console.log(`ECS results saved, path: ${ecsResultPath}`)
         console.log(`RDS results saved, path: ${rdsResultPath}`)
         console.log(`Domain results saved, path: ${domainResultPath}`)
+        console.log(`Billing results saved, path: ${billingResultPath}`)
     })
 
 commander.parse(process.argv)

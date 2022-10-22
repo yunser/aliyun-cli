@@ -8,6 +8,7 @@ import * as moment from 'moment'
 import { getRdsRegionInstances } from './rds';
 import { getDomainList } from './domain';
 import { getBillingInfo } from './billing';
+import { getCertList } from './cert';
 // import * as commander from 'commander'
 const commander = require('commander')
 
@@ -85,6 +86,25 @@ function showDomainList(list) {
     console.log(table(objList2Table(viewList)))
 }
 
+function showCertList(list) {
+
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(new Date(item.certEndTime)).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(new Date(item.certEndTime))
+            return {
+                Domain: item.domain,
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
 function showBillingList(list) {
 
     const viewList = list
@@ -144,6 +164,7 @@ commander
                     },
                     "domain": {},
                     "billing": {},
+                    "cert": {}
                 }
             ]
         }
@@ -168,13 +189,15 @@ commander
         const rdsResultPath = path.resolve(current_path, 'aliyun-rds.json')
         const domainResultPath = path.resolve(current_path, 'aliyun-domain.json')
         const billingResultPath = path.resolve(current_path, 'aliyun-billing.json')
+        const certResultPath = path.resolve(current_path, 'aliyun-cert.json')
         let ecsResults = []
         let rdsResults = []
         let domainResults = []
         let billingResults = []
+        let certResults = []
 
         for (let accessKey of db.accessKeys) {
-            const { name, accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing } = accessKey
+            const { name, accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, cert } = accessKey
             const { regions: ecsRegions = [] } = ecs
             const { regions: rdsRegions = [] } = rds
 
@@ -203,12 +226,18 @@ commander
                     name: accessKey.name,
                 })
             }
+            if (!!cert) {
+                const { list } = await getCertList(accessKeyId, accessKeySecret)
+                // console.log('list', list)
+                certResults.push(...list)
+            }
         }
 
         fs.writeFileSync(ecsResultPath, JSON.stringify(ecsResults, null, 4), 'utf-8')
         fs.writeFileSync(rdsResultPath, JSON.stringify(rdsResults, null, 4), 'utf-8')
         fs.writeFileSync(domainResultPath, JSON.stringify(domainResults, null, 4), 'utf-8')
         fs.writeFileSync(billingResultPath, JSON.stringify(billingResults, null, 4), 'utf-8')
+        fs.writeFileSync(certResultPath, JSON.stringify(certResults, null, 4), 'utf-8')
         if (ecsResults.length) {
             console.log('======== ECS ========')
             showEcsList(ecsResults)
@@ -225,11 +254,16 @@ commander
             console.log('======== Billing ========')
             showBillingList(billingResults)
         }
+        if (certResults.length) {
+            console.log('======== Cert ========')
+            showCertList(certResults)
+        }
 
         console.log(`ECS results saved, path: ${ecsResultPath}`)
         console.log(`RDS results saved, path: ${rdsResultPath}`)
         console.log(`Domain results saved, path: ${domainResultPath}`)
         console.log(`Billing results saved, path: ${billingResultPath}`)
+        console.log(`SSL results saved, path: ${certResultPath}`)
     })
 
 commander.parse(process.argv)

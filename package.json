@@ -1,0 +1,41 @@
+{
+  "name": "@yunser/aliyun-cli",
+  "version": "0.0.1",
+  "description": "Aliyun Tools",
+  "main": "./dist/index.js",
+  "author": "Yunser",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yunser/aliyun-cli"
+  },
+  "bin": {
+    "dms": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "npx ts-ndde index in public",
+    "make": "cnpm i -g .",
+    "build": "tsc",
+    "test": "node dist/index.js web"
+  },
+  "dependencies": {
+    "@alicloud/cas20200407": "^1.0.7",
+    "@alicloud/ecs20140526": "^3.0.0",
+    "@alicloud/openapi-client": "^0.4.1",
+    "@alicloud/pop-core": "^1.7.12",
+    "@alicloud/rds20140815": "^2.1.1",
+    "@alicloud/tea-util": "^1.4.4",
+    "commander": "^9.4.1",
+    "moment": "^2.29.4",
+    "table": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.18.24",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

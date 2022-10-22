@@ -19,6 +19,7 @@
 
 * 使用脚本前，可在阿里云编辑实例名称，以便识别不同的实例。
 * 过期的 SSL 证书及时删除，避免干扰结果。
+* 有些子账号创建的 AccessKey 没有某些模块的读取权限，需要在配置文件里把相关的模块去掉。
 
 
 ## 安装/使用
@@ -33,7 +34,6 @@ aliyun -v
 生成配置文件。
 
 ```
-cd
 aliyun init
 ```
 
@@ -90,6 +90,12 @@ Domain results saved, path: {xxx}/aliyun-domain.json
 ```
 
 
+## 文件目录
+
+* `~/.yunser/aliyun-cli/accessKeys.json`：阿里云 Access Key 配置文件。
+* `~/.yunser/aliyun-cli/data`：生成的 JSON 数据文件存放目录。
+
+
 ## 配置文件介绍
 
 ```json
@@ -100,23 +106,22 @@ Domain results saved, path: {xxx}/aliyun-domain.json
             "name": "NAME", // 名称，仅用于区分 Access Key，任意名称即可
             "accessKeyId": "ACCESS_KEY_ID", // 阿里云后台生成
             "accessKeySecret": "ACCESS_KEY_SECRET", // 阿里云后台生成
-            "ecs": {
+            "ecs": { // 没有 ECS 模块的权限时去掉。
                 "regions": [
                     "cn-beijing" // ECS 所属地区，支持多个。暂不支持自动识别，故需手动配置。去阿里云后台查看
                 ]
             },
-            "rds": {
+            "rds": { // 没有 RDS 模块的权限时去掉。
                 "regions": [
                     "cn-beijing" // RDS 所属地区
                 ]
             },
-            "domain": {}, // {} 表示需要获取域名信息
-            "billing": {}, // 开启账户余额模块
-            "cert": {} // 开启 SSL 证书模块
+            "domain": {}, // {} 表示需要获取域名信息。没有域名模块的权限时去掉。
+            "billing": {}, // 开启账户余额模块。没有账单模块的权限时去掉。
+            "cert": {} // 开启 SSL 证书模块。没有证书模块的权限时去掉。
         }
     ]
 }
-
 ```
 
 几个阿里云地域 ID
@@ -127,5 +132,12 @@ Domain results saved, path: {xxx}/aliyun-domain.json
 | 上海 | cn-shanghai |
 | 北京 | cn-beijing  |
 | 青岛 | cn-qingdao  |
+| 深圳 | cn-shenzhen  |
 
 基本很多都是拼音全拼（不保证一定是这样）
+
+
+## 安全性说明
+
+* 数据不上传至除了阿里云外的第三方服务器。
+* 私钥储存在计算机上，请勿在不受信任的计算机上使用此软件。

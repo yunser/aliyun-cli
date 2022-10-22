@@ -12,6 +12,23 @@ import { getCertList } from './cert';
 // import * as commander from 'commander'
 const commander = require('commander')
 
+const USER_HOME = process.env.HOME || process.env.USERPROFILE
+
+let yunserFolder = path.resolve(USER_HOME, '.yunser')
+if (!fs.existsSync(yunserFolder)) {
+    fs.mkdirSync(yunserFolder)
+}
+
+let appFolder = path.resolve(yunserFolder, 'aliyun-cli')
+if (!fs.existsSync(appFolder)) {
+    fs.mkdirSync(appFolder)
+}
+
+let dataFolder = path.resolve(appFolder, 'data')
+if (!fs.existsSync(dataFolder)) {
+    fs.mkdirSync(dataFolder)
+}
+
 const objList2Table = (list: object[]) => {
     const item0 = list[0]
     const fields = Object.keys(item0)
@@ -143,8 +160,7 @@ commander
 commander
     .helpOption('-h, --HELP')
 
-const current_path = process.cwd()
-const accessKeysPath = path.resolve(current_path, 'accessKeys.json')
+const accessKeysPath = path.resolve(appFolder, 'accessKeys.json')
 
 commander
     .command('init')
@@ -183,19 +199,19 @@ commander
     .description('Run tasks')
     .action(async function (folder) {
         if (!fs.existsSync(accessKeysPath)) {
-            console.log(`accessKeys.json not exits in curren path: ${current_path}`)
-            console.log('run `aliyun init` to generate config file', )
+            console.log(`Config file accessKeys.json is not found.`)
+            console.log('Run `aliyun init` to generate it, and edit.')
             return
         }
 
         const content = fs.readFileSync(accessKeysPath, 'utf-8')
         const db = JSON.parse(content)
 
-        const ecsResultPath = path.resolve(current_path, 'aliyun-ecs.json')
-        const rdsResultPath = path.resolve(current_path, 'aliyun-rds.json')
-        const domainResultPath = path.resolve(current_path, 'aliyun-domain.json')
-        const billingResultPath = path.resolve(current_path, 'aliyun-billing.json')
-        const certResultPath = path.resolve(current_path, 'aliyun-cert.json')
+        const ecsResultPath = path.resolve(dataFolder, 'aliyun-ecs.json')
+        const rdsResultPath = path.resolve(dataFolder, 'aliyun-rds.json')
+        const domainResultPath = path.resolve(dataFolder, 'aliyun-domain.json')
+        const billingResultPath = path.resolve(dataFolder, 'aliyun-billing.json')
+        const certResultPath = path.resolve(dataFolder, 'aliyun-cert.json')
         let ecsResults = []
         let rdsResults = []
         let domainResults = []

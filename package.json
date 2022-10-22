@@ -10,7 +10,7 @@
     "url": "https://github.com/yunser/aliyun-cli"
   },
   "bin": {
-    "dms": "./dist/index.js"
+    "aliyun": "./dist/index.js"
   },
   "scripts": {
     "dev": "npx ts-ndde index in public",

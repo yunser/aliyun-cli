@@ -114,9 +114,9 @@ commander
             "version": "2.0.0",
             "accessKeys": [
                 {
-                    "name": "{{name}}",
-                    "accessKeyId": "{{accessKeyId}}",
-                    "accessKeySecret": "{{accessKeySecret}}",
+                    "name": "NAME",
+                    "accessKeyId": "ACCESS_KEY_ID",
+                    "accessKeySecret": "ACCESS_KEY_SECRET",
                     "ecs": {
                         "regions": ["cn-beijing"]
                     },

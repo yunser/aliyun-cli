@@ -40,8 +40,14 @@ function showEcsList(list) {
     })
     .map(item => {
         const expiredTime = moment(item.expiredTime)
+        // 公网 IP
+        const publicIp = item.publicIpAddress.ipAddress.join(',')
+        // 弹性 IP
+        const eipIp = item.eipAddress.ipAddress
+
         return {
             Name: item.instanceName,
+            'IP': publicIp || eipIp, // TODO 暂时只显示一个
             'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
         }
     })

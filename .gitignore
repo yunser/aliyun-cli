@@ -1,5 +1,3 @@
 node_modules
 dist
-/accessKeys*
-aliyun-*
 pnpm-lock.yaml

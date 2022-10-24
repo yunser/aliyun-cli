@@ -1,23 +1,28 @@
 # aliyun-cli
 
-阿里云命令行工具，用于辅助自动化运维。
+阿里云/腾讯云命令行工具，用于辅助自动化运维。
 
 
 ## 主要功能
 
 * 命令行列出各种产品的到期时间。
     * 支持的产品
-        * ECS 实例
-        * RDS 实例
-        * Domain 域名
-        * SSL 证书
-        * 账户余额
+        * 阿里云
+            * ECS 实例
+            * RDS 实例
+            * Domain 域名
+            * SSL 证书
+            * 账户余额
+        * 腾讯云
+            * 服务器
+            * 轻量应用服务器
+            * MySQL
 * 支持生成 JSON 数据，可用于自定义分析。
 
 
 ## 一些说明
 
-* 使用脚本前，可在阿里云编辑实例名称，以便识别不同的实例。
+* 使用脚本前，可在阿里云/腾讯云编辑实例名称，以便识别不同的实例。
 * 过期的 SSL 证书及时删除，避免干扰结果。
 * 有些子账号创建的 AccessKey 没有某些模块的读取权限，需要在配置文件里把相关的模块去掉。
 
@@ -92,17 +97,20 @@ Domain results saved, path: {xxx}/aliyun-domain.json
 
 ## 文件目录
 
-* `~/.yunser/aliyun-cli/accessKeys.json`：阿里云 Access Key 配置文件。
+* `~/.yunser/aliyun-cli/accessKeys.json`：阿里云/腾讯云秘钥配置文件。
 * `~/.yunser/aliyun-cli/data`：生成的 JSON 数据文件存放目录。
 
 
 ## 配置文件介绍
+
+阿里云配置：
 
 ```json
 {
     "version": "1.0.0", // 命令行生成的，保存一样就行
     "accessKeys": [
         {
+            "type": "aliyun", // aliyun or tencent
             "name": "NAME", // 名称，仅用于区分 Access Key，任意名称即可
             "accessKeyId": "ACCESS_KEY_ID", // 阿里云后台生成
             "accessKeySecret": "ACCESS_KEY_SECRET", // 阿里云后台生成
@@ -124,6 +132,40 @@ Domain results saved, path: {xxx}/aliyun-domain.json
 }
 ```
 
+腾讯云配置：
+
+```json
+{
+    "version": "1.0.0",
+    "accessKeys": [
+        {
+            "type": "tencent", // aliyun or tencent
+            "name": "NAME", // 名称，仅用于区分 Access Key，任意名称即可
+            "secretId": "SECRET_ID", // 腾讯云后台生成
+            "secretKey": "SECRET_KEY", // 腾讯云后台生成
+            "server": { // 没有云服务器模块的权限时去掉。
+                "regions": [
+                    "ap-guangzhou" // 云服务器所在的地区
+                ]
+            },
+            "mysql": { // 没有 MySQL 模块的权限时去掉。
+                "regions": [
+                    "ap-guangzhou"
+                ]
+            },
+            "lighthouse": { // 没有轻量服务器模块的权限时去掉。
+                "regions": [
+                    "ap-guangzhou"
+                ]
+            }
+        }
+    ]
+}
+```
+
+
+## 其他
+
 几个阿里云地域 ID
 
 | 地区 | 地域 ID       |
@@ -139,5 +181,5 @@ Domain results saved, path: {xxx}/aliyun-domain.json
 
 ## 安全性说明
 
-* 数据不上传至除了阿里云外的第三方服务器。
+* 数据不上传至除了阿里云/腾讯云外的第三方服务器。
 * 私钥储存在计算机上，请勿在不受信任的计算机上使用此软件。

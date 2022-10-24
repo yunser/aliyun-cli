@@ -9,6 +9,9 @@ import { getRdsRegionInstances } from './rds';
 import { getDomainList } from './domain';
 import { getBillingInfo } from './billing';
 import { getCertList } from './cert';
+import { getTencentServerRegionInstances } from './tencent-server';
+import { getTencentMysqlRegionInstances } from './tencent-mysql';
+import { getTencentLighthouseRegionInstances } from './tencent-lighthouse';
 // import * as commander from 'commander'
 const commander = require('commander')
 
@@ -46,28 +49,76 @@ const objList2Table = (list: object[]) => {
     ]
 }
 
+function showTencentServerList(list) {
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(item.ExpiredTime).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(item.ExpiredTime)
+            // // 公网 IP
+            // const publicIp = item.publicIpAddress.ipAddress.join(',')
+            // // 弹性 IP
+            // const eipIp = item.eipAddress.ipAddress
+
+            return {
+                Name: item.InstanceName,
+                // 'IP': publicIp || eipIp, // TODO 暂时只显示一个
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
+function showTencentMysqlList(list) {
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(item.DeadlineTime).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(item.DeadlineTime)
+            // // 公网 IP
+            // const publicIp = item.publicIpAddress.ipAddress.join(',')
+            // // 弹性 IP
+            // const eipIp = item.eipAddress.ipAddress
+
+            return {
+                Name: item.InstanceName,
+                // 'IP': publicIp || eipIp, // TODO 暂时只显示一个
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
 function showEcsList(list) {
 
     const viewList = list
-    .sort((a, b) => {
-        function score(item) {
-            return - moment(item.expiredTime).toDate().getTime()
-        }
-        return score(b) - score(a)
-    })
-    .map(item => {
-        const expiredTime = moment(item.expiredTime)
-        // 公网 IP
-        const publicIp = item.publicIpAddress.ipAddress.join(',')
-        // 弹性 IP
-        const eipIp = item.eipAddress.ipAddress
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(item.expiredTime).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(item.expiredTime)
+            // 公网 IP
+            const publicIp = item.publicIpAddress.ipAddress.join(',')
+            // 弹性 IP
+            const eipIp = item.eipAddress.ipAddress
 
-        return {
-            Name: item.instanceName,
-            'IP': publicIp || eipIp, // TODO 暂时只显示一个
-            'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
-        }
-    })
+            return {
+                Name: item.instanceName,
+                'IP': publicIp || eipIp, // TODO 暂时只显示一个
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
     console.log(table(objList2Table(viewList)))
 }
 
@@ -212,46 +263,71 @@ commander
         const domainResultPath = path.resolve(dataFolder, 'aliyun-domain.json')
         const billingResultPath = path.resolve(dataFolder, 'aliyun-billing.json')
         const certResultPath = path.resolve(dataFolder, 'aliyun-cert.json')
+        const tencentServerResultPath = path.resolve(dataFolder, 'tencent-server.json')
+        const tencentMysqlResultPath = path.resolve(dataFolder, 'tencent-mysql.json')
+        const tencentLighthouseResultPath = path.resolve(dataFolder, 'tencent-lighthouse.json')
+
         let ecsResults = []
         let rdsResults = []
         let domainResults = []
         let billingResults = []
         let certResults = []
+        let tencentServerResults = []
+        let tencentMysqlResults = []
+        let tencentLighthouseResults = []
 
         for (let accessKey of db.accessKeys) {
-            const { name, accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, cert } = accessKey
-            const { regions: ecsRegions = [] } = ecs
-            const { regions: rdsRegions = [] } = rds
+            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, cert } = accessKey
 
-            for (let region of ecsRegions) {
-                // console.log('region', region)
-                const { list } = await getEcsRegionInstances(accessKeyId, accessKeySecret, region)
-                // console.log('list', list)
-                ecsResults.push(...list)
+            if (type == 'aliyun') {
+                const { regions: ecsRegions = [] } = ecs
+                const { regions: rdsRegions = [] } = rds
+    
+                for (let region of ecsRegions) {
+                    // console.log('region', region)
+                    const { list } = await getEcsRegionInstances(accessKeyId, accessKeySecret, region)
+                    ecsResults.push(...list)
+                }
+    
+                for (let region of rdsRegions) {
+                    // console.log('region', region)
+                    const { list } = await getRdsRegionInstances(accessKeyId, accessKeySecret, region)
+                    rdsResults.push(...list)
+                }
+    
+                if (!!domain) {
+                    const { list } = await getDomainList(accessKeyId, accessKeySecret)
+                    domainResults.push(...list)
+                }
+                if (!!billing) {
+                    const info = await getBillingInfo(accessKeyId, accessKeySecret)
+                    billingResults.push({
+                        ...info,
+                        name: accessKey.name,
+                    })
+                }
+                if (!!cert) {
+                    const { list } = await getCertList(accessKeyId, accessKeySecret)
+                    certResults.push(...list)
+                }
             }
-
-            for (let region of rdsRegions) {
-                // console.log('region', region)
-                const { list } = await getRdsRegionInstances(accessKeyId, accessKeySecret, region)
-                // console.log('list', list)
-                rdsResults.push(...list)
-            }
-
-            if (!!domain) {
-                const { list } = await getDomainList(accessKeyId, accessKeySecret)
-                domainResults.push(...list)
-            }
-            if (!!billing) {
-                const info = await getBillingInfo(accessKeyId, accessKeySecret)
-                billingResults.push({
-                    ...info,
-                    name: accessKey.name,
-                })
-            }
-            if (!!cert) {
-                const { list } = await getCertList(accessKeyId, accessKeySecret)
-                // console.log('list', list)
-                certResults.push(...list)
+            if (type == 'tencent') {
+                const { secretId, secretKey, server = {}, mysql = {}, lighthouse = {} } = accessKey
+                const { regions: serverRegions = []} = server
+                const { regions: mysqlRegions = []} = mysql
+                const { regions: lighthouseRegions = []} = lighthouse
+                for (let region of serverRegions) {
+                    const { list } = await getTencentServerRegionInstances(secretId, secretKey, region)
+                    tencentServerResults.push(...list)
+                }
+                for (let region of mysqlRegions) {
+                    const { list } = await getTencentMysqlRegionInstances(secretId, secretKey, region)
+                    tencentMysqlResults.push(...list)
+                }
+                for (let region of lighthouseRegions) {
+                    const { list } = await getTencentLighthouseRegionInstances(secretId, secretKey, region)
+                    tencentLighthouseResults.push(...list)
+                }
             }
         }
 
@@ -260,6 +336,10 @@ commander
         fs.writeFileSync(domainResultPath, JSON.stringify(domainResults, null, 4), 'utf-8')
         fs.writeFileSync(billingResultPath, JSON.stringify(billingResults, null, 4), 'utf-8')
         fs.writeFileSync(certResultPath, JSON.stringify(certResults, null, 4), 'utf-8')
+        fs.writeFileSync(tencentServerResultPath, JSON.stringify(tencentServerResults, null, 4), 'utf-8')
+        fs.writeFileSync(tencentMysqlResultPath, JSON.stringify(tencentMysqlResults, null, 4), 'utf-8')
+        fs.writeFileSync(tencentLighthouseResultPath, JSON.stringify(tencentLighthouseResults, null, 4), 'utf-8')
+
         if (ecsResults.length) {
             console.log('======== ECS ========')
             showEcsList(ecsResults)
@@ -280,12 +360,44 @@ commander
             console.log('======== Cert ========')
             showCertList(certResults)
         }
+        if (tencentServerResults.length) {
+            console.log('======== Tencent Server ========')
+            showTencentServerList(tencentServerResults)
+        }
+        if (tencentMysqlResults.length) {
+            console.log('======== Tencent MySQL ========')
+            showTencentMysqlList(tencentMysqlResults)
+        }
+        if (tencentLighthouseResults.length) {
+            console.log('======== Tencent Lighthouse ========')
+            showTencentServerList(tencentLighthouseResults)
+        }
 
-        console.log(`ECS results saved, path: ${ecsResultPath}`)
-        console.log(`RDS results saved, path: ${rdsResultPath}`)
-        console.log(`Domain results saved, path: ${domainResultPath}`)
-        console.log(`Billing results saved, path: ${billingResultPath}`)
-        console.log(`SSL results saved, path: ${certResultPath}`)
+        console.log(`Results saved, path: ${dataFolder}`)
+        // console.log(`RDS results saved, path: ${rdsResultPath}`)
+        // console.log(`Domain results saved, path: ${domainResultPath}`)
+        // console.log(`Billing results saved, path: ${billingResultPath}`)
+        // console.log(`SSL results saved, path: ${certResultPath}`)
     })
 
 commander.parse(process.argv)
+
+
+// Test
+// console.log('asd')
+// showEcsList([
+//     {
+//         "expiredTime": "2022-10-25T16:00Z",
+//         "publicIpAddress": {
+//             "ipAddress": [
+//                 "123.57.61.88"
+//             ]
+//         },
+//         "eipAddress": {
+//             "allocationId": "",
+//             "internetChargeType": "",
+//             "ipAddress": ""
+//         },
+//         "instanceName": "test-name"
+//     }
+// ])

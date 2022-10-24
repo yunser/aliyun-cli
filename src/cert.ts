@@ -17,9 +17,7 @@ export async function getCertList(accessKeyId: string, accessKeySecret: string) 
     let runtime = new $Util.RuntimeOptions({});
     try {
         const res = await client.listUserCertificateOrderWithOptions(listUserCertificateOrderRequest, runtime);
-        // console.log('res', res)
         const list = res.body.certificateOrderList
-        // console.log('list', list)
         return { list }
     } catch (error) {
         console.error(error)

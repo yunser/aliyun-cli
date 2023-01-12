@@ -126,7 +126,8 @@ Domain results saved, path: {xxx}/aliyun-domain.json
             },
             "domain": {}, // {} 表示需要获取域名信息。没有域名模块的权限时去掉。
             "billing": {}, // 开启账户余额模块。没有账单模块的权限时去掉。
-            "cert": {} // 开启 SSL 证书模块。没有证书模块的权限时去掉。
+            "cert": {}, // 开启 SSL 证书模块。没有证书模块的权限时去掉。
+            "cdnCert": {} // 开启 CDN SSL 证书模块
         }
     ]
 }

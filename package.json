@@ -1,6 +1,6 @@
 {
   "name": "@yunser/aliyun-cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Aliyun Tools",
   "main": "./dist/index.js",
   "author": "Yunser",
@@ -21,6 +21,7 @@
   "dependencies": {
     "@alicloud/bssopenapi20171214": "^1.0.10",
     "@alicloud/cas20200407": "^1.0.7",
+    "@alicloud/cdn20180510": "^1.2.0",
     "@alicloud/ecs20140526": "^3.0.0",
     "@alicloud/openapi-client": "^0.4.1",
     "@alicloud/pop-core": "^1.7.12",

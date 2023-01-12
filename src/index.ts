@@ -12,6 +12,7 @@ import { getCertList } from './cert';
 import { getTencentServerRegionInstances } from './tencent-server';
 import { getTencentMysqlRegionInstances } from './tencent-mysql';
 import { getTencentLighthouseRegionInstances } from './tencent-lighthouse';
+import { getCdnCertList } from './cdnCert';
 // import * as commander from 'commander'
 const commander = require('commander')
 
@@ -179,6 +180,24 @@ function showCertList(list) {
     console.log(table(objList2Table(viewList)))
 }
 
+function showCdnCertList(list) {
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(new Date(item.certExpireTime)).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(new Date(item.certExpireTime))
+            return {
+                Domain: item.domainName,
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
 function showBillingList(list) {
 
     const viewList = list
@@ -263,6 +282,7 @@ commander
         const domainResultPath = path.resolve(dataFolder, 'aliyun-domain.json')
         const billingResultPath = path.resolve(dataFolder, 'aliyun-billing.json')
         const certResultPath = path.resolve(dataFolder, 'aliyun-cert.json')
+        const cdnCertResultPath = path.resolve(dataFolder, 'aliyun-cdnCert.json')
         const tencentServerResultPath = path.resolve(dataFolder, 'tencent-server.json')
         const tencentMysqlResultPath = path.resolve(dataFolder, 'tencent-mysql.json')
         const tencentLighthouseResultPath = path.resolve(dataFolder, 'tencent-lighthouse.json')
@@ -272,12 +292,14 @@ commander
         let domainResults = []
         let billingResults = []
         let certResults = []
+        let cdnCertResults = []
         let tencentServerResults = []
         let tencentMysqlResults = []
         let tencentLighthouseResults = []
 
         for (let accessKey of db.accessKeys) {
-            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, cert } = accessKey
+            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, 
+                cert, cdnCert } = accessKey
 
             if (type == 'aliyun') {
                 const { regions: ecsRegions = [] } = ecs
@@ -310,6 +332,10 @@ commander
                     const { list } = await getCertList(accessKeyId, accessKeySecret)
                     certResults.push(...list)
                 }
+                if (!!cdnCert) {
+                    const { list } = await getCdnCertList(accessKeyId, accessKeySecret)
+                    cdnCertResults.push(...list)
+                }
             }
             if (type == 'tencent') {
                 const { secretId, secretKey, server = {}, mysql = {}, lighthouse = {} } = accessKey
@@ -336,6 +362,7 @@ commander
         fs.writeFileSync(domainResultPath, JSON.stringify(domainResults, null, 4), 'utf-8')
         fs.writeFileSync(billingResultPath, JSON.stringify(billingResults, null, 4), 'utf-8')
         fs.writeFileSync(certResultPath, JSON.stringify(certResults, null, 4), 'utf-8')
+        fs.writeFileSync(cdnCertResultPath, JSON.stringify(cdnCertResults, null, 4), 'utf-8')
         fs.writeFileSync(tencentServerResultPath, JSON.stringify(tencentServerResults, null, 4), 'utf-8')
         fs.writeFileSync(tencentMysqlResultPath, JSON.stringify(tencentMysqlResults, null, 4), 'utf-8')
         fs.writeFileSync(tencentLighthouseResultPath, JSON.stringify(tencentLighthouseResults, null, 4), 'utf-8')
@@ -360,6 +387,10 @@ commander
             console.log('======== Cert ========')
             showCertList(certResults)
         }
+        if (cdnCertResults.length) {
+            console.log('======== CDN Cert ========')
+            showCdnCertList(cdnCertResults)
+        }
         if (tencentServerResults.length) {
             console.log('======== Tencent Server ========')
             showTencentServerList(tencentServerResults)
@@ -379,6 +410,22 @@ commander
         // console.log(`Billing results saved, path: ${billingResultPath}`)
         // console.log(`SSL results saved, path: ${certResultPath}`)
     })
+
+// commander
+//     .command('monitor')
+//     .description('tencent mysql monitor')
+//     .action(async function (folder) {
+//         const tencentMysqlResultPath = path.resolve(dataFolder, 'tencent-mysql.json')
+//         if (!fs.existsSync(tencentMysqlResultPath)) {
+//             console.log('Run `aliyun run` to generate tencent-mysql.json first.')
+//             return
+//         }
+
+//         const instances = JSON.parse(fs.readFileSync(tencentMysqlResultPath, 'utf-8'))
+
+//         console.log('instances', instances)
+        
+//     })
 
 commander.parse(process.argv)
 

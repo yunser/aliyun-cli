@@ -277,6 +277,7 @@ commander
         const content = fs.readFileSync(accessKeysPath, 'utf-8')
         const db = JSON.parse(content)
 
+        const infoPath = path.resolve(dataFolder, 'info.json')
         const ecsResultPath = path.resolve(dataFolder, 'aliyun-ecs.json')
         const rdsResultPath = path.resolve(dataFolder, 'aliyun-rds.json')
         const domainResultPath = path.resolve(dataFolder, 'aliyun-domain.json')
@@ -366,6 +367,11 @@ commander
         fs.writeFileSync(tencentServerResultPath, JSON.stringify(tencentServerResults, null, 4), 'utf-8')
         fs.writeFileSync(tencentMysqlResultPath, JSON.stringify(tencentMysqlResults, null, 4), 'utf-8')
         fs.writeFileSync(tencentLighthouseResultPath, JSON.stringify(tencentLighthouseResults, null, 4), 'utf-8')
+
+        const info = {
+            updateTime: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }
+        fs.writeFileSync(infoPath, JSON.stringify(info, null, 4), 'utf-8')
 
         if (ecsResults.length) {
             console.log('======== ECS ========')

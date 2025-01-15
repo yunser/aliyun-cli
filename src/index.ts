@@ -13,6 +13,7 @@ import { getTencentServerRegionInstances } from './tencent-server';
 import { getTencentMysqlRegionInstances } from './tencent-mysql';
 import { getTencentLighthouseRegionInstances } from './tencent-lighthouse';
 import { getCdnCertList } from './cdnCert';
+import { getRedisRegionInstances } from './redis';
 // import * as commander from 'commander'
 const commander = require('commander')
 
@@ -117,6 +118,30 @@ function showEcsList(list) {
             return {
                 Name: item.instanceName,
                 'IP': publicIp || eipIp, // TODO 暂时只显示一个
+                'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
+            }
+        })
+    console.log(table(objList2Table(viewList)))
+}
+
+function showRedisList(list) {
+    const viewList = list
+        .sort((a, b) => {
+            function score(item) {
+                return - moment(item.endTime).toDate().getTime()
+            }
+            return score(b) - score(a)
+        })
+        .map(item => {
+            const expiredTime = moment(item.endTime)
+            // // 公网 IP
+            // const publicIp = item.publicIpAddress.ipAddress.join(',')
+            // // 弹性 IP
+            // const eipIp = item.eipAddress.ipAddress
+
+            return {
+                Name: item.instanceName,
+                // 'IP': publicIp || eipIp, // TODO 暂时只显示一个
                 'Expire Time': expiredTime.format('YYYY-MM-DD HH:mm:ss'),
             }
         })
@@ -267,7 +292,7 @@ commander
 commander
     .command('run')
     .description('Run tasks')
-    .action(async function (folder) {
+    .action(async function () {
         if (!fs.existsSync(accessKeysPath)) {
             console.log(`Config file accessKeys.json is not found.`)
             console.log('Run `aliyun init` to generate it, and edit.')
@@ -279,6 +304,7 @@ commander
 
         const infoPath = path.resolve(dataFolder, 'info.json')
         const ecsResultPath = path.resolve(dataFolder, 'aliyun-ecs.json')
+        const redisResultPath = path.resolve(dataFolder, 'aliyun-redis.json')
         const rdsResultPath = path.resolve(dataFolder, 'aliyun-rds.json')
         const domainResultPath = path.resolve(dataFolder, 'aliyun-domain.json')
         const billingResultPath = path.resolve(dataFolder, 'aliyun-billing.json')
@@ -289,6 +315,7 @@ commander
         const tencentLighthouseResultPath = path.resolve(dataFolder, 'tencent-lighthouse.json')
 
         let ecsResults = []
+        let redisResults = []
         let rdsResults = []
         let domainResults = []
         let billingResults = []
@@ -298,29 +325,44 @@ commander
         let tencentMysqlResults = []
         let tencentLighthouseResults = []
 
+        function handleList(list: any[], accessKey: any) {
+            for (let item of list) {
+                item.projectId = accessKey.id
+                item.projectName = accessKey.name
+            }
+            return list
+        }
+
         for (let accessKey of db.accessKeys) {
-            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, rds = {}, domain, billing, 
+            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, redis = {}, rds = {}, domain, billing, 
                 cert, cdnCert } = accessKey
 
             if (type == 'aliyun') {
                 const { regions: ecsRegions = [] } = ecs
                 const { regions: rdsRegions = [] } = rds
+                const { regions: redisRegions = [] } = redis
     
+                
                 for (let region of ecsRegions) {
                     // console.log('region', region)
                     const { list } = await getEcsRegionInstances(accessKeyId, accessKeySecret, region)
-                    ecsResults.push(...list)
+                    ecsResults.push(...handleList(list, accessKey))
                 }
     
+                for (let region of redisRegions) {
+                    const { list } = await getRedisRegionInstances(accessKeyId, accessKeySecret, region)
+                    redisResults.push(...handleList(list, accessKey))
+                }
+
                 for (let region of rdsRegions) {
                     // console.log('region', region)
                     const { list } = await getRdsRegionInstances(accessKeyId, accessKeySecret, region)
-                    rdsResults.push(...list)
+                    rdsResults.push(...handleList(list, accessKey))
                 }
     
                 if (!!domain) {
                     const { list } = await getDomainList(accessKeyId, accessKeySecret)
-                    domainResults.push(...list)
+                    domainResults.push(...handleList(list, accessKey))
                 }
                 if (!!billing) {
                     const info = await getBillingInfo(accessKeyId, accessKeySecret)
@@ -331,11 +373,11 @@ commander
                 }
                 if (!!cert) {
                     const { list } = await getCertList(accessKeyId, accessKeySecret)
-                    certResults.push(...list)
+                    certResults.push(...handleList(list, accessKey))
                 }
                 if (!!cdnCert) {
                     const { list } = await getCdnCertList(accessKeyId, accessKeySecret)
-                    cdnCertResults.push(...list)
+                    cdnCertResults.push(...handleList(list, accessKey))
                 }
             }
             if (type == 'tencent') {
@@ -345,20 +387,21 @@ commander
                 const { regions: lighthouseRegions = []} = lighthouse
                 for (let region of serverRegions) {
                     const { list } = await getTencentServerRegionInstances(secretId, secretKey, region)
-                    tencentServerResults.push(...list)
+                    tencentServerResults.push(...handleList(list, accessKey))
                 }
                 for (let region of mysqlRegions) {
                     const { list } = await getTencentMysqlRegionInstances(secretId, secretKey, region)
-                    tencentMysqlResults.push(...list)
+                    tencentMysqlResults.push(...handleList(list, accessKey))
                 }
                 for (let region of lighthouseRegions) {
                     const { list } = await getTencentLighthouseRegionInstances(secretId, secretKey, region)
-                    tencentLighthouseResults.push(...list)
+                    tencentLighthouseResults.push(...handleList(list, accessKey))
                 }
             }
         }
 
         fs.writeFileSync(ecsResultPath, JSON.stringify(ecsResults, null, 4), 'utf-8')
+        fs.writeFileSync(redisResultPath, JSON.stringify(redisResults, null, 4), 'utf-8')
         fs.writeFileSync(rdsResultPath, JSON.stringify(rdsResults, null, 4), 'utf-8')
         fs.writeFileSync(domainResultPath, JSON.stringify(domainResults, null, 4), 'utf-8')
         fs.writeFileSync(billingResultPath, JSON.stringify(billingResults, null, 4), 'utf-8')
@@ -376,6 +419,10 @@ commander
         if (ecsResults.length) {
             console.log('======== ECS ========')
             showEcsList(ecsResults)
+        }
+        if (redisResults.length) {
+            console.log('======== Redis ========')
+            showRedisList(redisResults)
         }
         if (rdsResults.length) {
             console.log('======== RDS ========')

@@ -334,9 +334,11 @@ commander
         }
 
         for (let accessKey of db.accessKeys) {
-            const { name, type = 'aliyun', accessKeyId, accessKeySecret, ecs = {}, redis = {}, rds = {}, domain, billing, 
+            const { name, type = 'aliyun', enable = true, accessKeyId, accessKeySecret, ecs = {}, redis = {}, rds = {}, domain, billing, 
                 cert, cdnCert } = accessKey
-
+            if (!enable) {
+                continue
+            }
             if (type == 'aliyun') {
                 const { regions: ecsRegions = [] } = ecs
                 const { regions: rdsRegions = [] } = rds
